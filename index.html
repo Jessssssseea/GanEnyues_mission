@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分形树生成器</title>
+    <link rel="icon" href="./icon.ico">
+    <style>
+        /* ========== Material You Expressive 外观补丁 ========== */
+
+        /* 1. 动态配色变量（浅色） */
+        :root {
+          --md-sys-color-primary: #006e1c;
+          --md-sys-color-on-primary: #ffffff;
+          --md-sys-color-primary-container: #90f891;
+          --md-sys-color-on-primary-container: #002204;
+
+          --md-sys-color-secondary: #52634f;
+          --md-sys-color-on-secondary: #ffffff;
+          --md-sys-color-secondary-container: #d5e8cf;
+          --md-sys-color-on-secondary-container: #101f10;
+
+          --md-sys-color-surface: #fcfdf6;
+          --md-sys-color-on-surface: #1a1c18;
+          --md-sys-color-surface-variant: #e0e4d6;
+          --md-sys-color-on-surface-variant: #43483e;
+
+          --md-sys-color-outline: #73796d;
+          --md-sys-color-outline-variant: #c2c8bb;
+
+          --md-sys-elevation-1:
+            0px 1px 2px 0px rgba(0,0,0,0.30),
+            0px 1px 3px 1px rgba(0,0,0,0.15);
+          --md-sys-elevation-2:
+            0px 1px 2px 0px rgba(0,0,0,0.30),
+            0px 2px 6px 2px rgba(0,0,0,0.15);
+        }
+
+        /* 2. 深色配色跟随系统 */
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --md-sys-color-primary: #74d973;
+            --md-sys-color-on-primary: #00390a;
+            --md-sys-color-primary-container: #005313;
+            --md-sys-color-on-primary-container: #90f891;
+
+            --md-sys-color-secondary: #b9ccb3;
+            --md-sys-color-on-secondary: #253424;
+            --md-sys-color-secondary-container: #3b4b39;
+            --md-sys-color-on-secondary-container: #d5e8cf;
+
+            --md-sys-color-surface: #1a1c18;
+            --md-sys-color-on-surface: #e2e3dd;
+            --md-sys-color-surface-variant: #43483e;
+            --md-sys-color-on-surface-variant: #c2c8bb;
+
+            --md-sys-color-outline: #8c9286;
+            --md-sys-color-outline-variant: #43483e;
+          }
+        }
+
+        /* 3. 通用重置 */
+        body {
+          background: var(--md-sys-color-surface);
+          color: var(--md-sys-color-on-surface);
+          font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+          line-height: 1.5;
+          padding: 24px;
+        }
+
+        /* 4. 卡片容器 */
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          background: var(--md-sys-color-surface);
+          color: var(--md-sys-color-on-surface);
+          border-radius: 28px;
+          box-shadow: var(--md-sys-elevation-2);
+          overflow: hidden;
+        }
+
+        /* 5. header */
+        header {
+          background: var(--md-sys-color-primary-container);
+          color: var(--md-sys-color-on-primary-container);
+          padding: 24px 32px;
+          text-align: center;
+        }
+        h1 {
+          font-size: 32px;
+          font-weight: 500;
+          margin: 0;
+        }
+
+        /* 6. 内容栅格 */
+        .content {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 24px;
+          padding: 24px;
+        }
+        @media (max-width: 720px) {
+          .content { grid-template-columns: 1fr; }
+        }
+
+        /* 7. 左侧控制面板 */
+        .controls {
+          background: var(--md-sys-color-surface-variant);
+          border-radius: 24px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        /* 8. 输入框 / 选择框 */
+        input, select {
+          padding: 16px;
+          border: 1px solid var(--md-sys-color-outline);
+          border-radius: 12px;
+          background: var(--md-sys-color-surface);
+          color: var(--md-sys-color-on-surface);
+          font-size: 16px;
+          transition: border-color 200ms;
+        }
+        input:focus, select:focus {
+          border-color: var(--md-sys-color-primary);
+          outline: none;
+        }
+
+        /* 9. 按钮 */
+        button {
+          background: var(--md-sys-color-primary);
+          color: var(--md-sys-color-on-primary);
+          border: none;
+          padding: 16px 24px;
+          border-radius: 9999px;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: box-shadow 200ms, transform 200ms;
+          box-shadow: var(--md-sys-elevation-1);
+        }
+        button:hover {
+          box-shadow: var(--md-sys-elevation-2);
+          transform: translateY(-1px);
+        }
+        button:active {
+          transform: translateY(0);
+        }
+
+        /* 10. 画布 */
+        canvas {
+          width: 100%;
+          height: auto;
+          aspect-ratio: 1;
+          border-radius: 24px;
+          background: var(--md-sys-color-surface-variant);
+          box-shadow: var(--md-sys-elevation-1);
+        }
+
+        /* 11. 提示卡片 */
+        .note {
+          padding: 16px;
+          background: var(--md-sys-color-secondary-container);
+          color: var(--md-sys-color-on-secondary-container);
+          border-radius: 16px;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>分形树生成器</h1>
+            <p>调整下方参数，生成自定义的分形树图案</p>
+        </header>
+        
+        <div class="content">
+            <div class="controls">
+                <div class="form-group">
+                    <label for="depth">分支次数:</label>
+                    <input type="number" id="depth" min="1" max="99999999999" value="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="branchFactor">每次分支的数量:</label>
+                    <input type="number" id="branchFactor" min="1" max="99999999999" value="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="angleUnit">角度单位:</label>
+                    <select id="angleUnit">
+                        <option value="d">度 (°)</option>
+                        <option value="r">弧度 (rad)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="angleInput">分支角度:</label>
+                    <input type="text" id="angleInput" value="30">
+                    <div class="error" id="angleError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <button id="generateBtn">生成分形树</button>
+                </div>
+                
+                <div class="note">
+                    <p><strong>角度输入提示:</strong></p>
+                    <p>度制: 可输入数字或分数(如 31/23)</p>
+                    <p>弧度制: 可输入数字、分数或使用π(如 π/3, 2*pai/5)</p>
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <canvas id="treeCanvas" width="600" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const depthInput = document.getElementById('depth');
+        const branchFactorInput = document.getElementById('branchFactor');
+        const angleUnitSelect = document.getElementById('angleUnit');
+        const angleInput = document.getElementById('angleInput');
+        const angleError = document.getElementById('angleError');
+        const generateBtn = document.getElementById('generateBtn');
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 初始绘制
+        window.addEventListener('load', drawFractalTree);
+        generateBtn.addEventListener('click', drawFractalTree);
+
+        // 角度解析函数
+        function parseAngle(expr, unit) {
+            expr = expr.trim().toLowerCase();
+            
+            if (unit === 'd') {
+                if (expr.includes('π') || expr.includes('pai')) {
+                    throw new Error("角度制下不能使用π，请直接输入数字或分数");
+                }
+                
+                // 处理分数
+                if (expr.includes('/')) {
+                    const parts = expr.split('/');
+                    if (parts.length !== 2) {
+                        throw new Error("分数格式错误");
+                    }
+                    const numerator = parseFloat(parts[0]);
+                    const denominator = parseFloat(parts[1]);
+                    if (isNaN(numerator) || isNaN(denominator) || denominator === 0) {
+                        throw new Error("分数格式错误");
+                    }
+                    return (numerator / denominator) * Math.PI / 180;
+                }
+                
+                const value = parseFloat(expr);
+                if (isNaN(value)) {
+                    throw new Error("请输入有效的数字");
+                }
+                return value * Math.PI / 180;
+            } else {
+                // 弧度制
+                expr = expr.replace(/π/g, 'Math.PI').replace(/pai/g, 'Math.PI');
+                
+                // 处理分数
+                if (expr.includes('/')) {
+                    const parts = expr.split('/');
+                    if (parts.length !== 2) {
+                        throw new Error("分数格式错误");
+                    }
+                    
+                    try {
+                        const numerator = eval(parts[0]);
+                        const denominator = eval(parts[1]);
+                        if (isNaN(numerator) || isNaN(denominator) || denominator === 0) {
+                            throw new Error("分数值无效");
+                        }
+                        return numerator / denominator;
+                    } catch (e) {
+                        throw new Error("弧度表达式格式错误");
+                    }
+                }
+
+                try {
+                    const value = eval(expr);
+                    if (isNaN(value)) {
+                        throw new Error("请输入有效的数字或表达式");
+                    }
+                    return value;
+                } catch (e) {
+                    throw new Error("弧度表达式格式错误");
+                }
+            }
+        }
+
+        // 绘制分形树函数
+        function drawTree(x, y, angle, depth, branchLength, branchFactor, branchAngle) {
+            if (depth === 0) {
+                return;
+            }
+
+            // 计算当前分支的终点
+            const xEnd = x + branchLength * Math.cos(angle);
+            const yEnd = y + branchLength * Math.sin(angle);
+
+            // 绘制当前分支
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(xEnd, yEnd);
+            ctx.strokeStyle = 'brown';
+            ctx.lineWidth = depth * 0.5;
+            ctx.stroke();
+
+            // 新的分支长度
+            const newLength = branchLength * 0.8;
+
+            // 递归绘制子分支
+            if (branchFactor === 1) {
+                drawTree(xEnd, yEnd, angle, depth - 1, newLength, branchFactor, branchAngle);
+            } else {
+                const angleRange = (branchFactor - 1) * branchAngle;
+                const startAngle = angle - angleRange / 2;
+                for (let i = 0; i < branchFactor; i++) {
+                    const newAngle = startAngle + i * branchAngle;
+                    drawTree(xEnd, yEnd, newAngle, depth - 1, newLength, branchFactor, branchAngle);
+                }
+            }
+        }
+
+        // 主绘制函数
+        function drawFractalTree() {
+            // 清除错误信息
+            angleError.style.display = 'none';
+            
+            // 获取参数值
+            const depth = parseInt(depthInput.value) + 1;
+            const branchFactor = parseInt(branchFactorInput.value);
+            const unit = angleUnitSelect.value;
+            const angleStr = angleInput.value;
+            
+            // 解析角度
+            let branchAngle;
+            try {
+                branchAngle = parseAngle(angleStr, unit);
+            } catch (e) {
+                angleError.textContent = e.message;
+                angleError.style.display = 'block';
+                return;
+            }
+            
+            // 清除画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 设置坐标系原点在画布底部中央
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height);
+            ctx.scale(1, -1); // 翻转Y轴，使向上为正
+            
+            // 绘制分形树
+            const initialLength = 80;
+            drawTree(0, 0, Math.PI / 2, depth, initialLength, branchFactor, branchAngle);
+            
+            // 恢复坐标系
+            ctx.restore();
+            
+            // 添加标题
+            ctx.font = "16px Microsoft YaHei";
+            ctx.fillStyle = "#333";
+            ctx.textAlign = "center";
+            const angleDisplay = unit === 'd' ? `${angleStr}°` : `${angleStr} rad`;
+            ctx.fillText(`分形树 (分支次数: ${depth - 1}, 分支数量: ${branchFactor}, 分支角度: ${angleDisplay})`, 
+                         canvas.width / 2, 20);
+        }
+    </script>
+</body>
+</html>
