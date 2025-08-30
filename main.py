@@ -1,3 +1,9 @@
+'''
+运行环境：
+Python 3.11.6
+matplotlib==3.10.5
+numpy==2.3.2
+'''
 import matplotlib.pyplot as plt
 import math
 import numpy as np
