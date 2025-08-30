@@ -46,4 +46,4 @@
 
 ## 许可证
 
-MIT License，可自由使用与修改。
+[MIT License](https://github.com/Jessssssseea/GanEnyues_mission/blob/main/LICENSE)，可自由使用与修改。
